@@ -7,10 +7,11 @@
 #include "Components/InputComponent.h"
 #include "Components/WidgetComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
-#include "GameFramework/Controller.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "Net/UnrealNetwork.h"
+#include "Weapons/Weapon.h"
 
 
 ABaseCharacter::ABaseCharacter()
@@ -30,6 +31,14 @@ ABaseCharacter::ABaseCharacter()
 
 	OverheadWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("OverheadWidget"));
 	OverheadWidget->SetupAttachment(RootComponent);
+}
+
+void ABaseCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	// Set variable replicate only for the client that owns the pawn that overlaps with AreaSphere
+	DOREPLIFETIME_CONDITION(ABaseCharacter, OverlappingWeapon, COND_OwnerOnly);
 }
 
 void ABaseCharacter::BeginPlay()
@@ -88,6 +97,47 @@ void ABaseCharacter::Look(const FInputActionValue& Value)
 	{
 		AddControllerYawInput(LookAxisVector.X);
 		AddControllerPitchInput(LookAxisVector.Y);
+	}
+}
+
+void ABaseCharacter::SetOverlappingWeapon(AWeapon* Weapon)
+{
+	// Handle the case when the player is the server itself (with function IsLocallyControlled)
+	// If we don't use IsLocallyControlled, if the client overlaps and the widget shows to him, the server would see it as well
+
+	// Check for OverlappingWeapon before the variable is updated
+	if (IsLocallyControlled())
+	{
+		if (OverlappingWeapon)
+		{
+			OverlappingWeapon->ShowPickUpWidget(false);
+		}
+	}
+
+	// Set the OverlappingWeapon to the corresponding Weapon passed when calling this function
+	OverlappingWeapon = Weapon;
+
+	// Update the OverlappingWeapon then check if it is valid
+	if (IsLocallyControlled())
+	{
+		if (OverlappingWeapon)
+		{
+			OverlappingWeapon->ShowPickUpWidget(true);
+		}
+	}
+}
+
+void ABaseCharacter::OnRep_OverlappingWeapon(AWeapon* LastWeapon)
+{
+	if(OverlappingWeapon)
+	{
+		OverlappingWeapon->ShowPickUpWidget(true);
+	}
+
+	// When OverlappingWeapon is changed, LastWeapon still has pointer to last weapon we just stop overlapping
+	if (LastWeapon)
+	{
+		LastWeapon->ShowPickUpWidget(false);
 	}
 }
 

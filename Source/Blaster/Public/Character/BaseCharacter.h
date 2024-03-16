@@ -13,6 +13,7 @@ class UCameraComponent;
 class UInputAction;
 class UInputMappingContext;
 class UWidgetComponent;
+class AWeapon;
 
 UCLASS()
 class BLASTER_API ABaseCharacter : public ACharacter
@@ -23,6 +24,7 @@ public:
 	ABaseCharacter();
 
 	virtual void Tick(float DeltaTime) override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 protected:
 	virtual void BeginPlay() override;
@@ -38,6 +40,9 @@ private:
 	UPROPERTY(VisibleAnywhere, Category = Camera)
 	UCameraComponent* FollowCamera;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	UWidgetComponent* OverheadWidget;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	class UInputMappingContext* DefaultMappingContext;
 
@@ -50,6 +55,16 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	class UInputAction* LookAction;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	UWidgetComponent* OverheadWidget;
+	// Set variable replicated
+	// OnRep_ function will be called when on the client when OverlappingWeapon is replicated to that client
+	UPROPERTY(ReplicatedUsing = OnRep_OverlappingWeapon)
+	AWeapon* OverlappingWeapon;
+
+	// Replicate functions only be called on the client
+	UFUNCTION()
+	void OnRep_OverlappingWeapon(AWeapon* LastWeapon);
+
+public:
+	// This function is called from Weapon by function OnSphereOverlap which called only on the server
+	void SetOverlappingWeapon(AWeapon* Weapon);
 };
