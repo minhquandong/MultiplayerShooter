@@ -118,7 +118,24 @@ void ABaseCharacter::Look(const FInputActionValue& Value)
 
 void ABaseCharacter::EquipButtonPressed()
 {
-	if (CombatComponent && HasAuthority())
+	// When the equip button is pressed, EquipWeapon is called only when have authority
+	// If don't have authority, then send to RPC, so the server can call EquipWeapon for the client
+	if (CombatComponent)
+	{
+		if (HasAuthority())
+		{
+			CombatComponent->EquipWeapon(OverlappingWeapon);
+		}
+		else
+		{
+			ServerEquipButtonPressed();
+		}
+	}
+}
+
+void ABaseCharacter::ServerEquipButtonPressed_Implementation()
+{
+	if (CombatComponent)
 	{
 		CombatComponent->EquipWeapon(OverlappingWeapon);
 	}

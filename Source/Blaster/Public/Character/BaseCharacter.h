@@ -73,6 +73,9 @@ private:
 	UFUNCTION()
 	void OnRep_OverlappingWeapon(AWeapon* LastWeapon);
 
+	UFUNCTION(Server, Reliable)
+	void ServerEquipButtonPressed();
+
 public:
 	// This function is called from Weapon by function OnSphereOverlap which called only on the server
 	void SetOverlappingWeapon(AWeapon* Weapon);

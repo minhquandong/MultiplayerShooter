@@ -6,6 +6,7 @@
 #include "Character/BaseCharacter.h"
 #include "Weapons/Weapon.h"
 #include "Engine/SkeletalMeshSocket.h"
+#include "Components/SphereComponent.h"
 
 UCombatComponent::UCombatComponent()
 {
@@ -38,5 +39,5 @@ void UCombatComponent::EquipWeapon(AWeapon* WeaponToEquip)
 		HandSocket->AttachActor(EquipedWeapon, Character->GetMesh());
 	}
 	EquipedWeapon->SetOwner(Character);
-	EquipedWeapon->ShowPickUpWidget(false);
+	
 }
