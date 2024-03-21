@@ -35,6 +35,9 @@ ABaseCharacter::ABaseCharacter()
 
 	CombatComponent = CreateDefaultSubobject<UCombatComponent>(TEXT("CombatComponent"));
 	CombatComponent->SetIsReplicated(true);		// Set the component replicated. Component doesn't need to register in DOREPLIFETIME
+
+	// Set character can crouch
+	GetCharacterMovement()->NavAgentProps.bCanCrouch = true;
 }
 
 void ABaseCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -64,6 +67,7 @@ void ABaseCharacter::BeginPlay()
 	{
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
 		{
+			Subsystem->ClearAllMappings();
 			Subsystem->AddMappingContext(DefaultMappingContext, 0);
 		}
 	}
@@ -85,6 +89,8 @@ void ABaseCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ABaseCharacter::Move);
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ABaseCharacter::Look);
 		EnhancedInputComponent->BindAction(EquipAction, ETriggerEvent::Triggered, this, &ABaseCharacter::EquipButtonPressed);
+		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Started, this, &ABaseCharacter::CrouchButtonPressed);
+		EnhancedInputComponent->BindAction(AimingAction, ETriggerEvent::Triggered, this, &ABaseCharacter::AimButtonPressed);
 	}
 }
 
@@ -116,6 +122,18 @@ void ABaseCharacter::Look(const FInputActionValue& Value)
 	}
 }
 
+void ABaseCharacter::CrouchButtonPressed()
+{
+	if (bIsCrouched)
+	{
+		UnCrouch();
+	}
+	else
+	{
+		Crouch();
+	}
+}
+
 void ABaseCharacter::EquipButtonPressed()
 {
 	// When the equip button is pressed, EquipWeapon is called only when have authority
@@ -130,6 +148,14 @@ void ABaseCharacter::EquipButtonPressed()
 		{
 			ServerEquipButtonPressed();
 		}
+	}
+}
+
+void ABaseCharacter::AimButtonPressed(const FInputActionValue& Value)
+{
+	if (CombatComponent)
+	{
+		CombatComponent->SetAiming(Value.Get<bool>());
 	}
 }
 
@@ -166,6 +192,16 @@ void ABaseCharacter::SetOverlappingWeapon(AWeapon* Weapon)
 			OverlappingWeapon->ShowPickUpWidget(true);
 		}
 	}
+}
+
+bool ABaseCharacter::IsWeaponEquiped()
+{
+	return (CombatComponent && CombatComponent->EquipedWeapon);
+}
+
+bool ABaseCharacter::IsAiming()
+{
+	return (CombatComponent && CombatComponent->bAiming);
 }
 
 void ABaseCharacter::OnRep_OverlappingWeapon(AWeapon* LastWeapon)

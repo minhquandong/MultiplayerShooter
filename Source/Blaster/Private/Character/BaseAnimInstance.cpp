@@ -28,8 +28,9 @@ void UBaseAnimInstance::NativeUpdateAnimation(float DeltaTime)
 	Speed = Velocity.Size();
 
 	bIsInAir = BaseCharacter->GetCharacterMovement()->IsFalling();
-
 	bIsAccelerating = BaseCharacter->GetCharacterMovement()->GetCurrentAcceleration().Size() > 0.f ? true : false;
-
 	bShouldMove = (bIsAccelerating && Speed != 0) ? true : false;
+	bWeaponEquiped = BaseCharacter->IsWeaponEquiped();
+	bIsCrouched = BaseCharacter->bIsCrouched;
+	bIsAiming = BaseCharacter->IsAiming();
 }

@@ -34,7 +34,9 @@ protected:
 
 	void Move(const FInputActionValue& Value);
 	void Look(const FInputActionValue& Value);
+	void CrouchButtonPressed();
 	void EquipButtonPressed();
+	void AimButtonPressed(const FInputActionValue& Value);
 
 private:	
 	UPROPERTY(VisibleAnywhere, Category = Camera)
@@ -62,7 +64,13 @@ private:
 	UInputAction* LookAction;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* CrouchAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* EquipAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* AimingAction;
 
 	// Set variable replicated
 	// OnRep_ function will be called when on the client when OverlappingWeapon is replicated to that client
@@ -79,4 +87,6 @@ private:
 public:
 	// This function is called from Weapon by function OnSphereOverlap which called only on the server
 	void SetOverlappingWeapon(AWeapon* Weapon);
+	bool IsWeaponEquiped();
+	bool IsAiming();
 };

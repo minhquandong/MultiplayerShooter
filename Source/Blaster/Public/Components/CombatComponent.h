@@ -17,6 +17,7 @@ class BLASTER_API UCombatComponent : public UActorComponent
 public:	
 	UCombatComponent();
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	// Give ABaseCharacter full access to functions and variables of this class, including private and protected
 	friend class ABaseCharacter;
@@ -24,10 +25,18 @@ public:
 	void EquipWeapon(AWeapon* WeaponToEquip);
 
 private:
+	UPROPERTY(Replicated)
 	AWeapon* EquipedWeapon;
+
 	ABaseCharacter* Character;
+
+	UPROPERTY(Replicated)
+	bool bAiming;
 
 protected:
 	virtual void BeginPlay() override;
-		
+	void SetAiming(bool bIsAiming);
+
+	UFUNCTION(Server, Reliable)
+	void ServerSetAiming(bool bIsAiming);
 };
