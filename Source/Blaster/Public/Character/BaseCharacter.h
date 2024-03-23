@@ -34,7 +34,8 @@ protected:
 
 	void Move(const FInputActionValue& Value);
 	void Look(const FInputActionValue& Value);
-	void CrouchButtonPressed();
+	void CrouchButtonPressed(const FInputActionValue& Value);
+	void CrouchButtonReleased();
 	void EquipButtonPressed();
 	void AimButtonPressed(const FInputActionValue& Value);
 

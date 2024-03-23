@@ -90,7 +90,8 @@ void ABaseCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ABaseCharacter::Move);
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ABaseCharacter::Look);
 		EnhancedInputComponent->BindAction(EquipAction, ETriggerEvent::Triggered, this, &ABaseCharacter::EquipButtonPressed);
-		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Started, this, &ABaseCharacter::CrouchButtonPressed);
+		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Triggered, this, &ABaseCharacter::CrouchButtonPressed);
+		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Completed, this, &ABaseCharacter::CrouchButtonReleased);
 		EnhancedInputComponent->BindAction(AimingAction, ETriggerEvent::Triggered, this, &ABaseCharacter::AimButtonPressed);
 	}
 }
@@ -123,16 +124,27 @@ void ABaseCharacter::Look(const FInputActionValue& Value)
 	}
 }
 
-void ABaseCharacter::CrouchButtonPressed()
+void ABaseCharacter::CrouchButtonPressed(const FInputActionValue& Value)
 {
-	if (bIsCrouched)
+	if (Value.Get<bool>())
+	{
+		Crouch();
+	}
+
+	/*if (bIsCrouched)
 	{
 		UnCrouch();
 	}
 	else
 	{
 		Crouch();
-	}
+	}*/
+	
+}
+
+void ABaseCharacter::CrouchButtonReleased()
+{
+	UnCrouch();
 }
 
 void ABaseCharacter::EquipButtonPressed()
