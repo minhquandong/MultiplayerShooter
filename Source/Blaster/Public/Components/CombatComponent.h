@@ -33,10 +33,18 @@ private:
 	UPROPERTY(Replicated)
 	bool bAiming;
 
+	UPROPERTY(EditAnywhere)
+	float BaseWalkSpeed;
+	
+	UPROPERTY(EditAnywhere)
+	float AimWalkSpeed;
+
 protected:
 	virtual void BeginPlay() override;
 	void SetAiming(bool bIsAiming);
 
+	// Create Remote Procedural Call (RPC) function - which is called on 1 machine and then executed on another machine
+	// Reliable - garantie to be execute. Unreliable - could potential be dropped
 	UFUNCTION(Server, Reliable)
 	void ServerSetAiming(bool bIsAiming);
 
