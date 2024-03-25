@@ -34,6 +34,10 @@ void UBaseAnimInstance::NativeUpdateAnimation(float DeltaTime)
 	bWeaponEquiped = BaseCharacter->IsWeaponEquiped();
 	bIsCrouched = BaseCharacter->bIsCrouched;
 	bIsAiming = BaseCharacter->IsAiming();
+
+	AO_Yaw = BaseCharacter->GetAO_Yaw();
+	AO_Pitch = BaseCharacter->GetAO_Pitch();
+
 	/*
 	// Set YawOffset for strafing
 	FRotator AimRotation = BaseCharacter->GetBaseAimRotation();			// AimRotation is Global rotation
