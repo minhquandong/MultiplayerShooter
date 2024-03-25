@@ -26,7 +26,7 @@ public:
 
 private:
 	UPROPERTY(ReplicatedUsing = OnRep_EquipWeapon)
-	AWeapon* EquipedWeapon;
+	AWeapon* EquippedWeapon;
 
 	ABaseCharacter* Character;
 

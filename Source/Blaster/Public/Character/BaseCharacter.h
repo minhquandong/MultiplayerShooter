@@ -95,9 +95,11 @@ private:
 public:
 	// This function is called from Weapon by function OnSphereOverlap which called only on the server
 	void SetOverlappingWeapon(AWeapon* Weapon);
+	
 	bool IsWeaponEquiped();
 	bool IsAiming();
 
 	FORCEINLINE float GetAO_Yaw() const { return AO_Yaw; }	
 	FORCEINLINE float GetAO_Pitch() const { return AO_Pitch; }
+	AWeapon* GetEquippedWeapon();
 };

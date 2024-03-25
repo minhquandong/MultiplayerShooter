@@ -51,7 +51,7 @@ void UCombatComponent::ServerSetAiming_Implementation(bool bIsAiming)
 
 void UCombatComponent::OnRep_EquipWeapon()
 {
-	if (EquipedWeapon && Character)
+	if (EquippedWeapon && Character)
 	{
 		Character->GetCharacterMovement()->bOrientRotationToMovement = false;
 		Character->bUseControllerRotationYaw = true;
@@ -68,7 +68,7 @@ void UCombatComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME(UCombatComponent, EquipedWeapon);
+	DOREPLIFETIME(UCombatComponent, EquippedWeapon);
 	DOREPLIFETIME(UCombatComponent, bAiming);
 }
 
@@ -76,15 +76,15 @@ void UCombatComponent::EquipWeapon(AWeapon* WeaponToEquip)
 {
 	if (Character == nullptr || WeaponToEquip == nullptr) return;
 
-	EquipedWeapon = WeaponToEquip;
-	EquipedWeapon->SetWeaponState(EWeaponState::EWS_Equiped);
+	EquippedWeapon = WeaponToEquip;
+	EquippedWeapon->SetWeaponState(EWeaponState::EWS_Equiped);
 	const USkeletalMeshSocket* HandSocket = Character->GetMesh()->GetSocketByName(FName("RightHandSocket"));
 
 	if (HandSocket)
 	{
-		HandSocket->AttachActor(EquipedWeapon, Character->GetMesh());
+		HandSocket->AttachActor(EquippedWeapon, Character->GetMesh());
 	}
-	EquipedWeapon->SetOwner(Character);
+	EquippedWeapon->SetOwner(Character);
 	
 	// Set character stay facing forward when equiping weapon
 	Character->GetCharacterMovement()->bOrientRotationToMovement = false;

@@ -201,16 +201,6 @@ void ABaseCharacter::SetOverlappingWeapon(AWeapon* Weapon)
 	}
 }
 
-bool ABaseCharacter::IsWeaponEquiped()
-{
-	return (CombatComponent && CombatComponent->EquipedWeapon);
-}
-
-bool ABaseCharacter::IsAiming()
-{
-	return (CombatComponent && CombatComponent->bAiming);
-}
-
 void ABaseCharacter::OnRep_OverlappingWeapon(AWeapon* LastWeapon)
 {
 	if(OverlappingWeapon)
@@ -227,7 +217,7 @@ void ABaseCharacter::OnRep_OverlappingWeapon(AWeapon* LastWeapon)
 
 void ABaseCharacter::AimOffset(float DeltaTime)
 {
-	if (CombatComponent && CombatComponent->EquipedWeapon == nullptr) return;
+	if (CombatComponent && CombatComponent->EquippedWeapon == nullptr) return;
 
 	FVector Velocity = GetVelocity();
 	Velocity.Z = 0.f;
@@ -256,4 +246,20 @@ void ABaseCharacter::AimOffset(float DeltaTime)
 		FVector2D OutRange(-90.f, 0.f);
 		AO_Pitch = FMath::GetMappedRangeValueClamped(InRange, OutRange, AO_Pitch);
 	}
+}
+
+bool ABaseCharacter::IsWeaponEquiped()
+{
+	return (CombatComponent && CombatComponent->EquippedWeapon);
+}
+
+bool ABaseCharacter::IsAiming()
+{
+	return (CombatComponent && CombatComponent->bAiming);
+}
+
+AWeapon* ABaseCharacter::GetEquippedWeapon()
+{
+	if (CombatComponent == nullptr) return nullptr;
+	return CombatComponent->EquippedWeapon;
 }
