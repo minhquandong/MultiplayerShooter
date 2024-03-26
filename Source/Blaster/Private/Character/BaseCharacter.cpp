@@ -45,7 +45,9 @@ ABaseCharacter::ABaseCharacter()
 
 	// Set TurningInPlace to not turning at Beginplay
 	TurningInPlace = ETurningInPlace::ETIP_NotTurning;
-}
+
+	NetUpdateFrequency = 66.f;
+	MinNetUpdateFrequency = 33.f;
 
 void ABaseCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
