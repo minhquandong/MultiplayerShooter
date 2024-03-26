@@ -37,6 +37,7 @@ void UBaseAnimInstance::NativeUpdateAnimation(float DeltaTime)
 	EquippedWeapon = BaseCharacter->GetEquippedWeapon();
 	bIsCrouched = BaseCharacter->bIsCrouched;
 	bIsAiming = BaseCharacter->IsAiming();
+	TurningInPlace = BaseCharacter->GetTurningInPlace();
 
 	AO_Yaw = BaseCharacter->GetAO_Yaw();
 	AO_Pitch = BaseCharacter->GetAO_Pitch();
