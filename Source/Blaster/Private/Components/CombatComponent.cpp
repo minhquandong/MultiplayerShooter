@@ -9,10 +9,13 @@
 #include "Components/SphereComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Kismet/GameplayStatics.h"
+
+#include "DrawDebugHelpers.h"
 
 UCombatComponent::UCombatComponent()
 {
-	PrimaryComponentTick.bCanEverTick = false;
+	PrimaryComponentTick.bCanEverTick = true;
 
 	BaseWalkSpeed = 600.f;
 	AimWalkSpeed = 320.f;
@@ -77,6 +80,50 @@ void UCombatComponent::FireButtonPressed(bool bPressed)
 	}
 }
 
+void UCombatComponent::TraceUnderCrosshairs(FHitResult& TraceHitResult)
+{
+	FVector2D ViewportSize;
+	if (GEngine && GEngine->GameViewport)
+	{
+		GEngine->GameViewport->GetViewportSize(ViewportSize);
+	}
+
+	FVector2D CrossHairLocation(ViewportSize.X / 2.f, ViewportSize.Y / 2.f);		// Screen space coordinate
+	FVector CrosshairWorldPosition;
+	FVector CrosshairWorldDirection;
+	// Convert to World space coordinate
+	bool bScreenToWorld = UGameplayStatics::DeprojectScreenToWorld(
+		UGameplayStatics::GetPlayerController(this, 0),
+		CrossHairLocation,
+		CrosshairWorldPosition,
+		CrosshairWorldDirection
+	);
+
+	if (bScreenToWorld)
+	{
+		// Perform Line Trace
+		FVector Start = CrosshairWorldPosition;
+		FVector End = Start + CrosshairWorldDirection * TRACE_LENGTH;
+
+		GetWorld()->LineTraceSingleByChannel(
+			TraceHitResult,
+			Start,
+			End,
+			ECollisionChannel::ECC_Visibility
+		);
+
+		if (!TraceHitResult.bBlockingHit)
+		{
+			// In case Line Trace doesn't hit anything, set ImpactPoint to End vector
+			TraceHitResult.ImpactPoint = End;
+		}
+		else
+		{
+			DrawDebugSphere(GetWorld(), TraceHitResult.ImpactPoint, 12.f, 12, FColor::Red);
+		}
+	}
+}
+
 void UCombatComponent::ServerFire_Implementation()			// A RPC call on server will run on server
 {
 	MulticastFire();
@@ -96,6 +143,8 @@ void UCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActo
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
+	FHitResult HitResult;
+	TraceUnderCrosshairs(HitResult);
 }
 
 void UCombatComponent::EquipWeapon(AWeapon* WeaponToEquip)
