@@ -18,6 +18,14 @@ UCombatComponent::UCombatComponent()
 	AimWalkSpeed = 320.f;
 }
 
+void UCombatComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(UCombatComponent, EquippedWeapon);
+	DOREPLIFETIME(UCombatComponent, bAiming);
+}
+
 void UCombatComponent::BeginPlay()
 {
 	Super::BeginPlay();
@@ -62,8 +70,22 @@ void UCombatComponent::FireButtonPressed(bool bPressed)
 {
 	bFireButtonPressed = bPressed;
 
+	if (bFireButtonPressed)
+	{
+		// This function will call ServerFire function will result a Multicast RPC and Fire function will be execute on all clients
+		ServerFire();
+	}
+}
+
+void UCombatComponent::ServerFire_Implementation()			// A RPC call on server will run on server
+{
+	MulticastFire();
+}
+
+void UCombatComponent::MulticastFire_Implementation()		// A NetMulticast call on server will run on server & all clients
+{
 	if (EquippedWeapon == nullptr) return;
-	if (Character && bFireButtonPressed)
+	if (Character)
 	{
 		Character->PlayFireMontage(bAiming);
 		EquippedWeapon->Fire();
@@ -74,14 +96,6 @@ void UCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActo
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-}
-
-void UCombatComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
-{
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-
-	DOREPLIFETIME(UCombatComponent, EquippedWeapon);
-	DOREPLIFETIME(UCombatComponent, bAiming);
 }
 
 void UCombatComponent::EquipWeapon(AWeapon* WeaponToEquip)
