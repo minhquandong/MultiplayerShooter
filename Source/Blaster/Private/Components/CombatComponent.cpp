@@ -88,13 +88,14 @@ void UCombatComponent::TraceUnderCrosshairs(FHitResult& TraceHitResult)
 		GEngine->GameViewport->GetViewportSize(ViewportSize);
 	}
 
-	FVector2D CrossHairLocation(ViewportSize.X / 2.f, ViewportSize.Y / 2.f);		// Screen space coordinate
+	// Determine Crosshair location in Screen space coordinate
+	FVector2D CrosshairLocation(ViewportSize.X / 2.f, ViewportSize.Y / 2.f);
 	FVector CrosshairWorldPosition;
 	FVector CrosshairWorldDirection;
-	// Convert to World space coordinate
+	// Convert it to World space coordinate
 	bool bScreenToWorld = UGameplayStatics::DeprojectScreenToWorld(
 		UGameplayStatics::GetPlayerController(this, 0),
-		CrossHairLocation,
+		CrosshairLocation,
 		CrosshairWorldPosition,
 		CrosshairWorldDirection
 	);
@@ -116,9 +117,11 @@ void UCombatComponent::TraceUnderCrosshairs(FHitResult& TraceHitResult)
 		{
 			// In case Line Trace doesn't hit anything, set ImpactPoint to End vector
 			TraceHitResult.ImpactPoint = End;
+			HitTarget = End;
 		}
 		else
 		{
+			HitTarget = TraceHitResult.ImpactPoint;
 			DrawDebugSphere(GetWorld(), TraceHitResult.ImpactPoint, 12.f, 12, FColor::Red);
 		}
 	}
@@ -135,7 +138,7 @@ void UCombatComponent::MulticastFire_Implementation()		// A NetMulticast call on
 	if (Character)
 	{
 		Character->PlayFireMontage(bAiming);
-		EquippedWeapon->Fire();
+		EquippedWeapon->Fire(HitTarget);
 	}
 }
 

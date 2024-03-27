@@ -42,6 +42,7 @@ private:
 	float AimWalkSpeed;
 
 	bool bFireButtonPressed;
+	FVector HitTarget;
 
 protected:
 	virtual void BeginPlay() override;
