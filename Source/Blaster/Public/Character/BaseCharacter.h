@@ -16,6 +16,7 @@ class UWidgetComponent;
 class UInputAction;
 class UInputMappingContext;
 class AWeapon;
+class UAnimMontage;
 
 UCLASS()
 class BLASTER_API ABaseCharacter : public ACharacter
@@ -28,6 +29,7 @@ public:
 	virtual void Tick(float DeltaTime) override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void PostInitializeComponents() override;
+	void PlayFireMontage(bool bAiming);
 
 protected:
 	virtual void BeginPlay() override;
@@ -41,6 +43,8 @@ protected:
 	void AimButtonPressed(const FInputActionValue& Value);
 	void AimOffset(float DeltaTime);
 	virtual void Jump() override;
+	void FireButtonPressed();
+	void FireButtonReleased();
 
 private:	
 	UPROPERTY(VisibleAnywhere, Category = Camera)
@@ -76,6 +80,9 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* AimingAction;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* FireAction;
+
 	// Set variable replicated
 	// OnRep_ function will be called when on the client when OverlappingWeapon is replicated to that client
 	UPROPERTY(ReplicatedUsing = OnRep_OverlappingWeapon)
@@ -95,6 +102,9 @@ private:
 
 	ETurningInPlace TurningInPlace;
 	void TurnInPlace(float DeltaTime);
+
+	UPROPERTY(EditAnywhere, Category = Combat)
+	UAnimMontage* FireWeaponMontage;
 
 public:
 	// This function is called from Weapon by function OnSphereOverlap which called only on the server

@@ -39,6 +39,8 @@ private:
 	UPROPERTY(EditAnywhere)
 	float AimWalkSpeed;
 
+	bool bFireButtonPressed;
+
 protected:
 	virtual void BeginPlay() override;
 	void SetAiming(bool bIsAiming);
@@ -50,4 +52,6 @@ protected:
 
 	UFUNCTION()
 	void OnRep_EquipWeapon();
+
+	void FireButtonPressed(bool bPressed);
 };
