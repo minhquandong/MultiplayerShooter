@@ -10,6 +10,8 @@ void AProjectileWeapon::Fire(const FVector& HitTarget)
 {
 	Super::Fire(HitTarget);
 
+	// Execute this function on the Server only. The Server will spawn  projectiles then replicates to all clients
+	if (!HasAuthority()) return;
 	APawn* InstigatorPawn = Cast<APawn>(GetOwner());
 
 	// Get Projectile spawn location by socket name

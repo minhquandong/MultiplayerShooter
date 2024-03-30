@@ -75,8 +75,10 @@ void UCombatComponent::FireButtonPressed(bool bPressed)
 
 	if (bFireButtonPressed)
 	{
+		FHitResult HitResult;
+		TraceUnderCrosshairs(HitResult);
 		// This function will call ServerFire function will result a Multicast RPC and Fire function will be execute on all clients
-		ServerFire();
+		ServerFire(HitResult.ImpactPoint);
 	}
 }
 
@@ -112,33 +114,25 @@ void UCombatComponent::TraceUnderCrosshairs(FHitResult& TraceHitResult)
 			End,
 			ECollisionChannel::ECC_Visibility
 		);
-
 		if (!TraceHitResult.bBlockingHit)
 		{
-			// In case Line Trace doesn't hit anything, set ImpactPoint to End vector
 			TraceHitResult.ImpactPoint = End;
-			HitTarget = End;
-		}
-		else
-		{
-			HitTarget = TraceHitResult.ImpactPoint;
-			DrawDebugSphere(GetWorld(), TraceHitResult.ImpactPoint, 12.f, 12, FColor::Red);
 		}
 	}
 }
 
-void UCombatComponent::ServerFire_Implementation()			// A RPC call on server will run on server
+void UCombatComponent::ServerFire_Implementation(const FVector_NetQuantize& TraceHitTarget)			// A RPC call on server will run on server
 {
-	MulticastFire();
+	MulticastFire(TraceHitTarget);
 }
 
-void UCombatComponent::MulticastFire_Implementation()		// A NetMulticast call on server will run on server & all clients
+void UCombatComponent::MulticastFire_Implementation(const FVector_NetQuantize& TraceHitTarget)		// A NetMulticast call on server will run on server & all clients
 {
 	if (EquippedWeapon == nullptr) return;
 	if (Character)
 	{
 		Character->PlayFireMontage(bAiming);
-		EquippedWeapon->Fire(HitTarget);
+		EquippedWeapon->Fire(TraceHitTarget);
 	}
 }
 
@@ -146,8 +140,6 @@ void UCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActo
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	FHitResult HitResult;
-	TraceUnderCrosshairs(HitResult);
 }
 
 void UCombatComponent::EquipWeapon(AWeapon* WeaponToEquip)
