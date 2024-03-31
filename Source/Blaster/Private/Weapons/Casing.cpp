@@ -26,7 +26,9 @@ void ACasing::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	CasingMesh->AddImpulse(GetActorForwardVector() * ShellEjectionImpulse);
+	FVector ForwardVector = GetActorForwardVector();
+	ForwardVector.Z = FMath::RandRange(-0.3f, 0.3f);			// Shell will be ejected in random angle
+	CasingMesh->AddImpulse(ForwardVector * ShellEjectionImpulse);
 	CasingMesh->OnComponentHit.AddDynamic(this, &ACasing::OnHit);
 }
 
