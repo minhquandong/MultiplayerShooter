@@ -10,6 +10,8 @@
 
 class AWeapon;
 class ABaseCharacter;
+class ABasePlayerController;
+class ABlasterHUD;
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class BLASTER_API UCombatComponent : public UActorComponent
@@ -27,10 +29,12 @@ public:
 	void EquipWeapon(AWeapon* WeaponToEquip);
 
 private:
+	ABaseCharacter* Character;
+	ABasePlayerController* Controller;
+	ABlasterHUD* HUD;
+	
 	UPROPERTY(ReplicatedUsing = OnRep_EquipWeapon)
 	AWeapon* EquippedWeapon;
-
-	ABaseCharacter* Character;
 
 	UPROPERTY(Replicated)
 	bool bAiming;
@@ -64,4 +68,6 @@ protected:
 	void MulticastFire(const FVector_NetQuantize& TraceHitTarget);
 
 	void TraceUnderCrosshairs(FHitResult& TraceHitResult);
+
+	void SetHUDCrosshairs(float DeltaTime);
 };
