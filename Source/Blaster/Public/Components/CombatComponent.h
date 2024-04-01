@@ -53,6 +53,8 @@ private:
 	float CrosshairVelocityFactor;
 	float CrosshairInAirFactor;
 
+	FVector HitTarget;
+
 protected:
 	virtual void BeginPlay() override;
 	void SetAiming(bool bIsAiming);

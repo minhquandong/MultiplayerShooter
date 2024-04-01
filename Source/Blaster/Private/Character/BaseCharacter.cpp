@@ -307,11 +307,11 @@ void ABaseCharacter::AimOffset(float DeltaTime)
 
 void ABaseCharacter::TurnInPlace(float DeltaTime)
 {
-	if (AO_Yaw > 90.f)
+	if (AO_Yaw > 55.f)
 	{
 		TurningInPlace = ETurningInPlace::ETIP_Right;
 	}
-	else if (AO_Yaw < -90.f)
+	else if (AO_Yaw < -55.f)
 	{
 		TurningInPlace = ETurningInPlace::ETIP_Left;
 	}
@@ -341,4 +341,10 @@ AWeapon* ABaseCharacter::GetEquippedWeapon()
 {
 	if (CombatComponent == nullptr) return nullptr;
 	return CombatComponent->EquippedWeapon;
+}
+
+FVector ABaseCharacter::GetHitTarget() const
+{
+	if (CombatComponent == nullptr) return FVector();
+	return CombatComponent->HitTarget;
 }
