@@ -12,6 +12,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Controller/BasePlayerController.h"
 #include "HUD/BlasterHUD.h"
+#include "Camera/CameraComponent.h"
 
 #include "Engine/Engine.h"
 
@@ -38,6 +39,13 @@ void UCombatComponent::BeginPlay()
 	if (Character)
 	{
 		Character->GetCharacterMovement()->MaxWalkSpeed = BaseWalkSpeed;
+
+		if (Character->GetFollowCamera())
+		{
+			// Set initial value for FOV
+			DefaultFOV = Character->GetFollowCamera()->FieldOfView;
+			CurrentFOV = DefaultFOV;
+		}
 	}
 }
 
@@ -45,17 +53,17 @@ void UCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActo
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	SetHUDCrosshairs(DeltaTime);
-
 	if (Character && Character->IsLocallyControlled())
 	{
 		FHitResult HitResult;
 		TraceUnderCrosshairs(HitResult);
 		HitTarget = HitResult.ImpactPoint;
+
+		SetHUDCrosshairs(DeltaTime);
+		InterpFOV(DeltaTime);
 	}
 	
 }
-
 
 void UCombatComponent::SetHUDCrosshairs(float DeltaTime)
 {
@@ -99,17 +107,53 @@ void UCombatComponent::SetHUDCrosshairs(float DeltaTime)
 			// Add Crosshair spread while in air
 			if (Character->GetCharacterMovement()->IsFalling())
 			{
-				CrosshairInAirFactor = FMath::FInterpTo(CrosshairInAirFactor, 2.25f, DeltaTime, 8.f);
+				CrosshairInAirFactor = FMath::FInterpTo(CrosshairInAirFactor, 2.25f, DeltaTime, 10.f);
 			}
 			else
 			{
 				CrosshairInAirFactor = FMath::FInterpTo(CrosshairInAirFactor, 0.f, DeltaTime, 30.f);
 			}
 
-			HUDPackage.CrosshairSpread = CrosshairVelocityFactor + CrosshairInAirFactor;
+			// Srhink crosshair while aiming
+			if (bAiming)
+			{
+				CrosshairAimFactor = FMath::FInterpTo(CrosshairInAirFactor, 1.f, DeltaTime, 15.f);
+			}
+			else
+			{
+				CrosshairAimFactor = FMath::FInterpTo(CrosshairInAirFactor, 0.f, DeltaTime, 15.f);
+			}
+
+			// Add crosshair spread while shooting
+			if (EquippedWeapon && bFireButtonPressed)
+			{
+				CrosshairShootingFactor = FMath::FInterpTo(CrosshairShootingFactor, 0.75f, DeltaTime, 20.f);
+			}
+			// Add Crosshair shrink to normal state while stop shooting
+			CrosshairShootingFactor = FMath::FInterpTo(CrosshairShootingFactor, 0.f, DeltaTime, 10.f);
+
+			HUDPackage.CrosshairSpread = 0.75f + CrosshairVelocityFactor + CrosshairInAirFactor - CrosshairAimFactor + CrosshairShootingFactor;
 
 			HUD->SetHUDPackage(HUDPackage);
 		}
+	}
+}
+
+void UCombatComponent::InterpFOV(float DeltaTime)
+{
+	if (EquippedWeapon == nullptr) return;
+
+	if (bAiming)
+	{
+		CurrentFOV = FMath::FInterpTo(CurrentFOV, EquippedWeapon->ZoomedFOV, DeltaTime, EquippedWeapon->ZoomInterpSpeed);
+	}
+	else
+	{
+		CurrentFOV = FMath::FInterpTo(CurrentFOV, DefaultFOV, DeltaTime, EquippedWeapon->ZoomInterpSpeed);
+	}
+	if (Character && Character->GetFollowCamera())
+	{
+		Character->GetFollowCamera()->SetFieldOfView(CurrentFOV);
 	}
 }
 
@@ -180,6 +224,13 @@ void UCombatComponent::TraceUnderCrosshairs(FHitResult& TraceHitResult)
 	{
 		// Perform Line Trace
 		FVector Start = CrosshairWorldPosition;
+
+		if (Character)
+		{
+			float DistanceToCharacter = (Character->GetActorLocation() - Start).Size();
+			Start += CrosshairWorldDirection * (DistanceToCharacter + 200.f);
+		}
+
 		FVector End = Start + CrosshairWorldDirection * TRACE_LENGTH;
 
 		GetWorld()->LineTraceSingleByChannel(
