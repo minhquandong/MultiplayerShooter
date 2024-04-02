@@ -6,6 +6,7 @@
 #include "GameFramework/Character.h"
 #include "InputActionValue.h"
 #include "OtherTypes/TurningInPlace.h"
+#include "Interfaces/InteractWithCrosshairsInterface.h"
 
 #include "BaseCharacter.generated.h"
 
@@ -19,7 +20,7 @@ class AWeapon;
 class UAnimMontage;
 
 UCLASS()
-class BLASTER_API ABaseCharacter : public ACharacter
+class BLASTER_API ABaseCharacter : public ACharacter, public IInteractWithCrosshairsInterface
 {
 	GENERATED_BODY()
 
