@@ -107,6 +107,11 @@ private:
 	UPROPERTY(EditAnywhere, Category = Combat)
 	UAnimMontage* FireWeaponMontage;
 
+	void HideCameraIfCharacterClose();
+
+	UPROPERTY(EditAnywhere)
+	float CameraThreshold = 200.f;
+
 public:
 	// This function is called from Weapon by function OnSphereOverlap which called only on the server
 	void SetOverlappingWeapon(AWeapon* Weapon);

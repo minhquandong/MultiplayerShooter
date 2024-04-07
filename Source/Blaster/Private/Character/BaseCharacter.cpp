@@ -106,6 +106,7 @@ void ABaseCharacter::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	AimOffset(DeltaTime);
+	HideCameraIfCharacterClose();
 }
 
 void ABaseCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -222,6 +223,19 @@ void ABaseCharacter::ServerEquipButtonPressed_Implementation()
 	if (CombatComponent)
 	{
 		CombatComponent->EquipWeapon(OverlappingWeapon);
+	}
+}
+
+void ABaseCharacter::HideCameraIfCharacterClose()
+{
+	if (!IsLocallyControlled()) return;
+
+	// Hide Character & Weapon mesh when the camera is too close to the character
+	const bool bCameraIsTooClose = (FollowCamera->GetComponentLocation() - GetActorLocation()).Size() < CameraThreshold;
+	GetMesh()->SetVisibility(!bCameraIsTooClose);
+	if (CombatComponent && CombatComponent->EquippedWeapon && CombatComponent->EquippedWeapon->GetWeaponMesh())
+	{
+		CombatComponent->EquippedWeapon->GetWeaponMesh()->bOwnerNoSee = bCameraIsTooClose;
 	}
 }
 
