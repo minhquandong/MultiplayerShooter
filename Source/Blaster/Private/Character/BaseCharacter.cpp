@@ -16,6 +16,7 @@
 #include "Components/CombatComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Character/BaseAnimInstance.h"
+#include "Blaster/Blaster.h"
 
 
 ABaseCharacter::ABaseCharacter()
@@ -36,6 +37,7 @@ ABaseCharacter::ABaseCharacter()
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 	GetCharacterMovement()->RotationRate = FRotator(0.f, 0.f, 850.f);
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
+	GetMesh()->SetCollisionObjectType(ECC_SkeletalMesh);
 	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
 	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
 	
@@ -83,6 +85,19 @@ void ABaseCharacter::PlayFireMontage(bool bAiming)
 		AnimInstance->Montage_Play(FireWeaponMontage);
 		FName SectionName;
 		SectionName = bAiming ? FName("RifleAim") : FName("RifleHip");
+		AnimInstance->Montage_JumpToSection(SectionName);
+	}
+}
+
+void ABaseCharacter::PlayHitReactMontage()
+{
+	if (CombatComponent == nullptr || CombatComponent->EquippedWeapon == nullptr) return;
+
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance && HitReactMontage)
+	{
+		AnimInstance->Montage_Play(HitReactMontage);
+		FName SectionName("FromFront");
 		AnimInstance->Montage_JumpToSection(SectionName);
 	}
 }
@@ -224,6 +239,11 @@ void ABaseCharacter::ServerEquipButtonPressed_Implementation()
 	{
 		CombatComponent->EquipWeapon(OverlappingWeapon);
 	}
+}
+
+void ABaseCharacter::MulticastHit_Implementation()
+{
+	PlayHitReactMontage();
 }
 
 void ABaseCharacter::HideCameraIfCharacterClose()
