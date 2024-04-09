@@ -35,6 +35,8 @@ public:
 	UFUNCTION(NetMulticast, Unreliable)
 	void MulticastHit();
 
+	virtual void OnRep_ReplicatedMovement() override;
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
@@ -46,6 +48,8 @@ protected:
 	void EquipButtonPressed();
 	void AimButtonPressed(const FInputActionValue& Value);
 	void AimOffset(float DeltaTime);
+	void CalculateAO_Pitch();
+	void SimProxiesTurn();
 	virtual void Jump() override;
 	void FireButtonPressed();
 	void FireButtonReleased();
@@ -119,6 +123,14 @@ private:
 	UPROPERTY(EditAnywhere)
 	float CameraThreshold = 200.f;
 
+	bool bRotateRootBone;
+	float TurnThreshold = 0.75f;
+	float ProxyYaw;
+	FRotator ProxyRotationLastFrame;
+	FRotator ProxyRotation;
+	float TimeSinceLastMovementReplication;
+	float CalculateSpeed();
+
 public:
 	// This function is called from Weapon by function OnSphereOverlap which called only on the server
 	void SetOverlappingWeapon(AWeapon* Weapon);
@@ -132,4 +144,5 @@ public:
 	FORCEINLINE ETurningInPlace GetTurningInPlace() const { return TurningInPlace; }
 	FVector GetHitTarget() const;
 	FORCEINLINE UCameraComponent* GetFollowCamera() const { return FollowCamera; }
+	FORCEINLINE bool ShouldRotateRootBone() const { return bRotateRootBone; }
 };

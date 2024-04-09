@@ -38,6 +38,7 @@ void UBaseAnimInstance::NativeUpdateAnimation(float DeltaTime)
 	bIsCrouched = BaseCharacter->bIsCrouched;
 	bIsAiming = BaseCharacter->IsAiming();
 	TurningInPlace = BaseCharacter->GetTurningInPlace();
+	bRotateRootBone = BaseCharacter->ShouldRotateRootBone();
 
 	AO_Yaw = BaseCharacter->GetAO_Yaw();
 	AO_Pitch = BaseCharacter->GetAO_Pitch();
