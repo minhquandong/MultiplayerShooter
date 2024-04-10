@@ -5,6 +5,7 @@
 
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundCue.h"
+#include "TimerManager.h"
 
 ACasing::ACasing()
 {
@@ -30,6 +31,14 @@ void ACasing::BeginPlay()
 	ForwardVector.Z = FMath::RandRange(-0.3f, 0.3f);			// Shell will be ejected in random angle
 	CasingMesh->AddImpulse(ForwardVector * ShellEjectionImpulse);
 	CasingMesh->OnComponentHit.AddDynamic(this, &ACasing::OnHit);
+
+	GetWorld()->GetTimerManager().SetTimer(ShellSoundTimer, this, &ACasing::RemoveShellSound, 1.f, false);
+}
+
+void ACasing::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
 }
 
 void ACasing::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
@@ -40,9 +49,7 @@ void ACasing::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitive
 	}
 }
 
-void ACasing::Tick(float DeltaTime)
+void ACasing::RemoveShellSound()
 {
-	Super::Tick(DeltaTime);
-
+	ShellSound = nullptr;
 }
-

@@ -11,8 +11,8 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Controller/BasePlayerController.h"
-//#include "HUD/BlasterHUD.h"
 #include "Camera/CameraComponent.h"
+#include "TimerManager.h"
 
 #include "Engine/Engine.h"
 
@@ -65,116 +65,84 @@ void UCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActo
 	
 }
 
-void UCombatComponent::SetHUDCrosshairs(float DeltaTime)
+void UCombatComponent::FireButtonPressed(bool bPressed)
 {
-	if (Character == nullptr || Character->Controller == nullptr) return;
+	bFireButtonPressed = bPressed;
 
-	Controller = Controller == nullptr ? Cast<ABasePlayerController>(Character->Controller) : Controller;
-	if (Controller)
+	if (bFireButtonPressed && EquippedWeapon)
 	{
-		HUD = HUD == nullptr ? Cast<ABlasterHUD>(Controller->GetHUD()) : HUD;
-		if (HUD)
-		{
-			if (EquippedWeapon)
-			{
-				HUDPackage.CrosshairsCenter = EquippedWeapon->CrosshairsCenter;
-				HUDPackage.CrosshairsLeft = EquippedWeapon->CrosshairsLeft;
-				HUDPackage.CrosshairsRight = EquippedWeapon->CrosshairsRight;
-				HUDPackage.CrosshairsTop = EquippedWeapon->CrosshairsTop;
-				HUDPackage.CrosshairsBottom = EquippedWeapon->CrosshairsBottom;
-				
-			}
-			else
-			{
-				HUDPackage.CrosshairsCenter = nullptr;
-				HUDPackage.CrosshairsLeft = nullptr;
-				HUDPackage.CrosshairsRight = nullptr;
-				HUDPackage.CrosshairsTop = nullptr;
-				HUDPackage.CrosshairsBottom = nullptr;
-			}
-
-			// Calculate Crosshair spread
-			
-			// Add Crosshair spread while moving
-			FVector2D WalkSpeedRange(0.f, Character->GetCharacterMovement()->MaxWalkSpeed);
-			FVector2D VelocityMultiplierRange(0.f, 1.f);
-			FVector Velocity = Character->GetVelocity();
-			Velocity.Z = 0.f;
-			// Mapping Movespeed [0, MaxMovementSpeed] -> [0, 1]
-			CrosshairVelocityFactor = FMath::GetMappedRangeValueClamped(WalkSpeedRange, VelocityMultiplierRange, Velocity.Size());
-
-			// Add Crosshair spread while in air
-			if (Character->GetCharacterMovement()->IsFalling())
-			{
-				CrosshairInAirFactor = FMath::FInterpTo(CrosshairInAirFactor, 2.25f, DeltaTime, 10.f);
-			}
-			else
-			{
-				CrosshairInAirFactor = FMath::FInterpTo(CrosshairInAirFactor, 0.f, DeltaTime, 30.f);
-			}
-
-			// Srhink crosshair while aiming
-			if (bAiming)
-			{
-				CrosshairAimFactor = FMath::FInterpTo(CrosshairInAirFactor, 1.f, DeltaTime, 15.f);
-			}
-			else
-			{
-				CrosshairAimFactor = FMath::FInterpTo(CrosshairInAirFactor, 0.f, DeltaTime, 15.f);
-			}
-
-			// Add crosshair spread while shooting
-			if (EquippedWeapon && bFireButtonPressed)
-			{
-				CrosshairShootingFactor = FMath::FInterpTo(CrosshairShootingFactor, 0.75f, DeltaTime, 20.f);
-			}
-			// Add Crosshair shrink to normal state while stop shooting
-			CrosshairShootingFactor = FMath::FInterpTo(CrosshairShootingFactor, 0.f, DeltaTime, 10.f);
-
-			HUDPackage.CrosshairSpread = 0.75f + CrosshairVelocityFactor + CrosshairInAirFactor - CrosshairAimFactor + CrosshairShootingFactor;
-
-			HUD->SetHUDPackage(HUDPackage);
-		}
+		Fire();
 	}
 }
 
-void UCombatComponent::InterpFOV(float DeltaTime)
+void UCombatComponent::Fire()
+{
+	if (bCanFire)
+	{
+		bCanFire = false;
+		// This function will call ServerFire function will result a Multicast RPC and Fire function will be execute on all clients
+		ServerFire(HitTarget);
+		if (EquippedWeapon)
+		{
+			CrosshairShootingFactor = .75f;
+		}
+		StartFireTimer();
+	}
+}
+
+void UCombatComponent::StartFireTimer()
+{
+	if (EquippedWeapon == nullptr || Character == nullptr) return;
+	Character->GetWorldTimerManager().SetTimer(
+		FireTimer,
+		this,
+		&UCombatComponent::FireTimerFinished,
+		EquippedWeapon->FireDelay
+	);
+}
+
+void UCombatComponent::FireTimerFinished()
 {
 	if (EquippedWeapon == nullptr) return;
-
-	if (bAiming)
+	bCanFire = true;
+	if (bFireButtonPressed && EquippedWeapon->bAutomatic)
 	{
-		CurrentFOV = FMath::FInterpTo(CurrentFOV, EquippedWeapon->ZoomedFOV, DeltaTime, EquippedWeapon->ZoomInterpSpeed);
-	}
-	else
-	{
-		CurrentFOV = FMath::FInterpTo(CurrentFOV, DefaultFOV, DeltaTime, EquippedWeapon->ZoomInterpSpeed);
-	}
-	if (Character && Character->GetFollowCamera())
-	{
-		Character->GetFollowCamera()->SetFieldOfView(CurrentFOV);
+		Fire();		
 	}
 }
 
-void UCombatComponent::SetAiming(bool bIsAiming)
+void UCombatComponent::ServerFire_Implementation(const FVector_NetQuantize& TraceHitTarget)			// A RPC call on server will run on server
 {
-	bAiming = bIsAiming;
-	ServerSetAiming(bIsAiming);
+	MulticastFire(TraceHitTarget);
+}
 
+void UCombatComponent::MulticastFire_Implementation(const FVector_NetQuantize& TraceHitTarget)		// A NetMulticast call on server will run on server & all clients
+{
+	if (EquippedWeapon == nullptr) return;
 	if (Character)
 	{
-		Character->GetCharacterMovement()->MaxWalkSpeed = bIsAiming ? AimWalkSpeed : BaseWalkSpeed;
+		Character->PlayFireMontage(bAiming);
+		EquippedWeapon->Fire(TraceHitTarget);
 	}
 }
 
-// This function will be called on client then executed on server.
-void UCombatComponent::ServerSetAiming_Implementation(bool bIsAiming)
+void UCombatComponent::EquipWeapon(AWeapon* WeaponToEquip)
 {
-	bAiming = bIsAiming;
-	if (Character)
+	if (Character == nullptr || WeaponToEquip == nullptr) return;
+
+	EquippedWeapon = WeaponToEquip;
+	EquippedWeapon->SetWeaponState(EWeaponState::EWS_Equiped);
+	const USkeletalMeshSocket* HandSocket = Character->GetMesh()->GetSocketByName(FName("RightHandSocket"));
+
+	if (HandSocket)
 	{
-		Character->GetCharacterMovement()->MaxWalkSpeed = bIsAiming ? AimWalkSpeed : BaseWalkSpeed;
+		HandSocket->AttachActor(EquippedWeapon, Character->GetMesh());
 	}
+	EquippedWeapon->SetOwner(Character);
+	
+	// Set character stay facing forward when equiping weapon
+	Character->GetCharacterMovement()->bOrientRotationToMovement = false;
+	Character->bUseControllerRotationYaw = true;
 }
 
 void UCombatComponent::OnRep_EquipWeapon()
@@ -183,19 +151,6 @@ void UCombatComponent::OnRep_EquipWeapon()
 	{
 		Character->GetCharacterMovement()->bOrientRotationToMovement = false;
 		Character->bUseControllerRotationYaw = true;
-	}
-}
-
-void UCombatComponent::FireButtonPressed(bool bPressed)
-{
-	bFireButtonPressed = bPressed;
-
-	if (bFireButtonPressed)
-	{
-		FHitResult HitResult;
-		TraceUnderCrosshairs(HitResult);
-		// This function will call ServerFire function will result a Multicast RPC and Fire function will be execute on all clients
-		ServerFire(HitResult.ImpactPoint);
 	}
 }
 
@@ -255,36 +210,115 @@ void UCombatComponent::TraceUnderCrosshairs(FHitResult& TraceHitResult)
 	}
 }
 
-void UCombatComponent::ServerFire_Implementation(const FVector_NetQuantize& TraceHitTarget)			// A RPC call on server will run on server
+void UCombatComponent::SetHUDCrosshairs(float DeltaTime)
 {
-	MulticastFire(TraceHitTarget);
+	if (Character == nullptr || Character->Controller == nullptr) return;
+
+	Controller = Controller == nullptr ? Cast<ABasePlayerController>(Character->Controller) : Controller;
+	if (Controller)
+	{
+		HUD = HUD == nullptr ? Cast<ABlasterHUD>(Controller->GetHUD()) : HUD;
+		if (HUD)
+		{
+			if (EquippedWeapon)
+			{
+				HUDPackage.CrosshairsCenter = EquippedWeapon->CrosshairsCenter;
+				HUDPackage.CrosshairsLeft = EquippedWeapon->CrosshairsLeft;
+				HUDPackage.CrosshairsRight = EquippedWeapon->CrosshairsRight;
+				HUDPackage.CrosshairsTop = EquippedWeapon->CrosshairsTop;
+				HUDPackage.CrosshairsBottom = EquippedWeapon->CrosshairsBottom;
+
+			}
+			else
+			{
+				HUDPackage.CrosshairsCenter = nullptr;
+				HUDPackage.CrosshairsLeft = nullptr;
+				HUDPackage.CrosshairsRight = nullptr;
+				HUDPackage.CrosshairsTop = nullptr;
+				HUDPackage.CrosshairsBottom = nullptr;
+			}
+
+			// Calculate Crosshair spread
+
+			// Add Crosshair spread while moving
+			FVector2D WalkSpeedRange(0.f, Character->GetCharacterMovement()->MaxWalkSpeed);
+			FVector2D VelocityMultiplierRange(0.f, 1.f);
+			FVector Velocity = Character->GetVelocity();
+			Velocity.Z = 0.f;
+			// Mapping Movespeed [0, MaxMovementSpeed] -> [0, 1]
+			CrosshairVelocityFactor = FMath::GetMappedRangeValueClamped(WalkSpeedRange, VelocityMultiplierRange, Velocity.Size());
+
+			// Add Crosshair spread while in air
+			if (Character->GetCharacterMovement()->IsFalling())
+			{
+				CrosshairInAirFactor = FMath::FInterpTo(CrosshairInAirFactor, 2.25f, DeltaTime, 10.f);
+			}
+			else
+			{
+				CrosshairInAirFactor = FMath::FInterpTo(CrosshairInAirFactor, 0.f, DeltaTime, 30.f);
+			}
+
+			// Srhink crosshair while aiming
+			if (bAiming)
+			{
+				CrosshairAimFactor = FMath::FInterpTo(CrosshairInAirFactor, 1.f, DeltaTime, 15.f);
+			}
+			else
+			{
+				CrosshairAimFactor = FMath::FInterpTo(CrosshairInAirFactor, 0.f, DeltaTime, 15.f);
+			}
+			/*
+			// Add crosshair spread while shooting
+			if (EquippedWeapon && bFireButtonPressed)
+			{
+				CrosshairShootingFactor = FMath::FInterpTo(CrosshairShootingFactor, 0.75f, DeltaTime, 20.f);
+			}
+			// Add Crosshair shrink to normal state while stop shooting
+			CrosshairShootingFactor = FMath::FInterpTo(CrosshairShootingFactor, 0.f, DeltaTime, 10.f);*/
+			CrosshairShootingFactor = FMath::FInterpTo(CrosshairShootingFactor, 0.f, DeltaTime, 40.f);
+
+			HUDPackage.CrosshairSpread = 0.75f + CrosshairVelocityFactor + CrosshairInAirFactor - CrosshairAimFactor + CrosshairShootingFactor;
+
+			HUD->SetHUDPackage(HUDPackage);
+		}
+	}
 }
 
-void UCombatComponent::MulticastFire_Implementation(const FVector_NetQuantize& TraceHitTarget)		// A NetMulticast call on server will run on server & all clients
+void UCombatComponent::InterpFOV(float DeltaTime)
 {
 	if (EquippedWeapon == nullptr) return;
-	if (Character)
+
+	if (bAiming)
 	{
-		Character->PlayFireMontage(bAiming);
-		EquippedWeapon->Fire(TraceHitTarget);
+		CurrentFOV = FMath::FInterpTo(CurrentFOV, EquippedWeapon->ZoomedFOV, DeltaTime, EquippedWeapon->ZoomInterpSpeed);
+	}
+	else
+	{
+		CurrentFOV = FMath::FInterpTo(CurrentFOV, DefaultFOV, DeltaTime, EquippedWeapon->ZoomInterpSpeed);
+	}
+	if (Character && Character->GetFollowCamera())
+	{
+		Character->GetFollowCamera()->SetFieldOfView(CurrentFOV);
 	}
 }
 
-void UCombatComponent::EquipWeapon(AWeapon* WeaponToEquip)
+void UCombatComponent::SetAiming(bool bIsAiming)
 {
-	if (Character == nullptr || WeaponToEquip == nullptr) return;
+	bAiming = bIsAiming;
+	ServerSetAiming(bIsAiming);
 
-	EquippedWeapon = WeaponToEquip;
-	EquippedWeapon->SetWeaponState(EWeaponState::EWS_Equiped);
-	const USkeletalMeshSocket* HandSocket = Character->GetMesh()->GetSocketByName(FName("RightHandSocket"));
-
-	if (HandSocket)
+	if (Character)
 	{
-		HandSocket->AttachActor(EquippedWeapon, Character->GetMesh());
+		Character->GetCharacterMovement()->MaxWalkSpeed = bIsAiming ? AimWalkSpeed : BaseWalkSpeed;
 	}
-	EquippedWeapon->SetOwner(Character);
-	
-	// Set character stay facing forward when equiping weapon
-	Character->GetCharacterMovement()->bOrientRotationToMovement = false;
-	Character->bUseControllerRotationYaw = true;
+}
+
+void UCombatComponent::ServerSetAiming_Implementation(bool bIsAiming)
+{
+	// This function will be called on client then executed on server.
+	bAiming = bIsAiming;
+	if (Character)
+	{
+		Character->GetCharacterMovement()->MaxWalkSpeed = bIsAiming ? AimWalkSpeed : BaseWalkSpeed;
+	}
 }

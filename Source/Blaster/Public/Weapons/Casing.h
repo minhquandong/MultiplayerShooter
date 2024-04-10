@@ -7,6 +7,7 @@
 #include "Casing.generated.h"
 
 class USoundCue;
+//class FTimerHandle;
 
 UCLASS()
 class BLASTER_API ACasing : public AActor
@@ -33,4 +34,6 @@ private:
 	UPROPERTY(EditAnywhere)
 	USoundCue* ShellSound;
 
+	FTimerHandle ShellSoundTimer;
+	void RemoveShellSound();
 };
